@@ -544,7 +544,7 @@ Converts a color `From` to the format specified by `To`. Optional parameters in 
 
 **Example**:
 ```erlang
-#lab{} = Lab = cbet:convert(#srgb{r=1.0, g=0.0, b=0.0}, #lab{illum=?D65}, #{adaptation => ?BRADFORD, clamp => true}). %%converts from the sRGB D65(default) to the CIELab D50 structure
+#lab{} = Lab = cbet:convert(#srgb{r=1.0, g=0.0, b=0.0}, #lab{illum=?D65}, #{adaptation => ?BRADFORD, clamp => true}). %%converts from the sRGB D65(default) to the CIELab D65 structure
 ```
 **Warning:**
 - ⚠️This function does **not** check whether record field values are within valid ranges. If any field contains an out-of-range value, the function results in **undefined behavior**.
