@@ -719,6 +719,6 @@ The `prefix` option allows adding a string like <<"0x">> or <<"#">> before the h
 ## TODO
 
 - Add support for HDR color spaces and transfer functions (PQ, HLG for scene-referred data).
-- Implement parsing of css 4 color notation.
+- Implement parsing of CSS Color Module Levels 4 and 5 specifications color notation.
 - Support for spectral data and spectral-to-RGB conversions.
 
