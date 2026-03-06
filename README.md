@@ -14,6 +14,8 @@ The library provides a unified pipeline for color conversion and processing, sup
 - **Perceptual and Advanced Color Models** - LogLuv, DIN99, IPT, ICtCp, Oklab, Oklch
 - **Cylindrical & User-Oriented Color Models** - HSV, HSL, HSI, HWB, CMY
 
+This library's primary function is `convert`, which transforms colors between different formats and illuminants. The library also provides several simpler functions for basic color manipulation, along with a few more complex ones for calculating correlates of color appearance models such as CAM16, Hunt, Nayatani et al. (95).
+
 ## Design Notes
 
 - All formats are represented as typed Erlang records.
