@@ -641,7 +641,6 @@ Interpolation in a perceptually uniform space like `Lab` ensures visually even s
 
 **Warning:**
 - ⚠️This function does **not** check whether record field values are within valid ranges. If any field contains an out-of-range value, the function results in **undefined behavior**.
-#### named_color/2
 #### lrv/1
 ```erlang
 lrv(Color) -> LRV
@@ -652,6 +651,7 @@ Types:
 
 Computes the Light Reflectance Value (LRV) of a color. In essence, it is the Y component of CIE XYZ under Illuminant C.
 
+#### named_color/2
 ```erlang
 named_color(Name, Format) -> {ok, Color} | {error, not_found}
 ```
