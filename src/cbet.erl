@@ -6,7 +6,7 @@
 	cam16_model/5, cam16_model/4, nayatani_model/5, nayatani_model/6,
 	chromaticity/1,
 	hunt_model/5,
-	hunt_model/6]).
+	hunt_model/6, lrv/1]).
 
 -include("cbet_debug.hrl").
 -include("cbet.hrl").
@@ -1796,6 +1796,12 @@ named_color(Name, Format) ->
 		Else -> Else
 	end.
 
+
+-spec lrv(Color :: cbet_color()) -> float().
+
+lrv(Color) ->
+	#xyz{y = Y} = convert(Color, #xyz{illum = ?ILLUM_C}),
+	Y.
 %%=====================================================================
 %%                              CAM 16
 %%				similar to the one in the python lib colour
