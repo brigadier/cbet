@@ -660,7 +660,7 @@ Types:
 -   Format : hex | '8byte' | srgb
 -   Color :
     -   `hex` -> binary(), hexadecimal representation
-    -   `'8byte'` -> {float(), float(), float()}, 8-bit RGB tuple
+    -   `'8byte'` -> {int(), int(), int()}, 8-bit RGB tuple
     -   `srgb` -> #srgb{} structure with components normalized to [0.0, 1.0]
 
 Looks up a color by `Name` and returns it in the specified `Format`.

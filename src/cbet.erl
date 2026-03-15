@@ -1783,7 +1783,7 @@ hextosrgb(Hex, Opts) ->
 
 
 -spec named_color(Name :: binary(),
-	Format :: hex | '8byte' | srgb) -> {ok, #srgb{}|{float(), float(), float()|binary()}} | {error, not_found}.
+	Format :: hex | '8byte' | srgb) -> {ok, #srgb{}|{int(), int(), int()|binary()}} | {error, not_found}.
 named_color(Name, Format) ->
 	case  cbet_named_colors:named_color(Name) of
 		{Hex, {R, G, B}} ->
