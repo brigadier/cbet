@@ -514,16 +514,16 @@ cam16_model(XYZ, WP, L_A, Y_b) -> Result
 cam16_model(XYZ, WP, L_A, Y_b, Opts) -> Result
 ```
 Types:
-- XYZ : {float(), float(), float()}  %% Object XYZ
-- WP  : {float(), float(), float()} | illuminant()  %% White point or illuminant
-- L_A : float()  -  Adapting field luminance in cd/m²
-- Y_b : float()  - Background relative luminance
-- Opts : #{
+- XYZ :: {float(), float(), float()}  %% Object XYZ
+- WP  :: {float(), float(), float()} | illuminant()  %% White point or illuminant
+- L_A :: float()  -  Adapting field luminance in cd/m²
+- Y_b :: float()  - Background relative luminance
+- Opts :: #{
     surround := cam16_surround(),
     discount_illuminant := boolean(),
     d := undefined | float()
 }
-- Result : #cam16{} - CAM16 appearance record
+- Result :: #cam16{} - CAM16 appearance record
 
 Computes the CAM16 appearance model for an object with given XYZ values, white point, adapting luminance L_A, and background relative luminance Y_b.
 Optional parameters in Opts allow setting the surround, discounting the illuminant, and specifying the degree of adaptation.
@@ -534,13 +534,13 @@ convert(From, To, Opts) -> Result
 ```
 
 Types:
--   From : cbet_color() - source color record
--   To : cbet_color() - target color record type
--   Opts : convert_opts() = #{
+-   From :: cbet_color() - source color record
+-   To :: cbet_color() - target color record type
+-   Opts :: convert_opts() = #{
     adaptation := chromatic_adaptation(), - Chromatic adaptation method
     clamp := boolean() - Whether to clamp values
     }
--   Result : cbet_color() - converted color record
+-   Result :: cbet_color() - converted color record
 
 Converts a color `From` to the format specified by `To`. Optional parameters in `Opts` allow specifying chromatic adaptation method and whether to clamp the result. By default `clamp == true`, `adaptation == 'Bradford'`
 
@@ -557,10 +557,10 @@ Converts a color `From` to the format specified by `To`. Optional parameters in 
 distance(Color1, Color2, Algo) -> Result
 ```
 Types:
--   Color1 : cbet_color() = first color record
--   Color2 : cbet_color() = second color record
--   Algo : color_distance() = distance metric to use (`?DELTA_XYZ`, `?DELTA_CIE1976`, etc.)
--   Result : float() = computed color distance
+-   Color1 :: cbet_color() = first color record
+-   Color2 :: cbet_color() = second color record
+-   Algo :: color_distance() = distance metric to use (`?DELTA_XYZ`, `?DELTA_CIE1976`, etc.)
+-   Result :: float() = computed color distance
 
 Computes the color difference between `Color1` and `Color2` using the specified distance algorithm.
 
@@ -580,12 +580,12 @@ hextosrgb(Hex) -> Result
 hextosrgb(Hex, Opts) -> Result
 ```
 Types:
--   Hex : binary() - color in hexadecimal notation
--   Opts : hextosrgb_opts() = #{
+-   Hex :: binary() - color in hexadecimal notation
+-   Opts :: hextosrgb_opts() = #{
     prefixes := [binary()], - list of allowed prefixes (default: <<"0x">>, <<"0X">>, <<"#">>, <<"16#">>)
     allow_short := boolean() - whether short form like "#f00" is allowed (default: true)
     }
--   Result : #srgb{} = resulting sRGB color record
+-   Result :: #srgb{} = resulting sRGB color record
 
 Parses a hexadecimal color string into an `#srgb{}` record. Optional parameters in `Opts` allow customizing allowed prefixes and enabling short form notation.
 
@@ -602,12 +602,12 @@ hunt_model(XYZ, WP, BgP, L_A, Surround) -> Result
 hunt_model(XYZ, WP, BgP, L_A, Surround, Opts) -> Result
 ```
 Types:
--   XYZ : {float(), float(), float()} = object XYZ coordinates
--   WP : {float(), float(), float()} | illuminant() = white point or illuminant
--   BgP : {float(), float(), float()} | illuminant() = background XYZ or illuminant
--   L_A : float() = adapting field luminance in cd/m²
--   Surround : hunt_surround() | {float(), float()} | {float(), float(), float() | undefined, float() | undefined} = surround specification
--   Opts : #{
+-   XYZ :: {float(), float(), float()} = object XYZ coordinates
+-   WP :: {float(), float(), float()} | illuminant() = white point or illuminant
+-   BgP :: {float(), float(), float()} | illuminant() = background XYZ or illuminant
+-   L_A :: float() = adapting field luminance in cd/m²
+-   Surround :: hunt_surround() | {float(), float()} | {float(), float(), float() | undefined, float() | undefined} = surround specification
+-   Opts :: #{
     helson_judd_effect := boolean(),
     discount_illuminant := boolean(),
     xyz_p := {float(), float(), float()} | illuminant(),
@@ -617,7 +617,7 @@ Types:
     s := float() | undefined,
     s_w := float() | undefined
     }
--   Result : #hunt{} = Hunt appearance model record
+-   Result :: #hunt{} = Hunt appearance model record
 
 Computes the Hunt color appearance model for an object with the given XYZ, white point, background, adapting luminance L_A, and surround. Optional parameters in `Opts` allow further customization of the model behaviour. Some of parameters in `Opts` are correlated with each other, the lib throws an error when the combination is invalid.
 #### interpolate/5
@@ -625,12 +625,12 @@ Computes the Hunt color appearance model for an object with the given XYZ, white
 interpolate(Color1, Color2, Space, Steps, ResultSpace) -> {ok, ResultList}
 ```
 Types:
--   Color1 : cbet_color() = starting color
--   Color2 : cbet_color() = ending color
--   Space : #lab{} = intermediate color space (currently only Lab is supported)
--   Steps : pos_integer() = number of steps in interpolation (≥ 2)
--   ResultSpace : cbet_color() = color structure in which results are returned
--   ResultList : [cbet_color()] = list of interpolated colors, including endpoints
+-   Color1 :: cbet_color() = starting color
+-   Color2 :: cbet_color() = ending color
+-   Space :: #lab{} = intermediate color space (currently only Lab is supported)
+-   Steps :: pos_integer() = number of steps in interpolation (≥ 2)
+-   ResultSpace :: cbet_color() = color structure in which results are returned
+-   ResultList :: [cbet_color()] = list of interpolated colors, including endpoints
 
 
 Computes a linear interpolation between `Color1` (any space) and `Color2` (any space as well) in the specified intermediate `Space`.
@@ -646,10 +646,10 @@ Interpolation in a perceptually uniform space like `Lab` ensures visually even s
 lrv(Color) -> LRV
 ```
 Types:
--   Color : cbet_color()
--   LRV : float() - computed LRV
+-   Color :: cbet_color()
+-   LRV :: float() - computed LRV
 
-Computes the Light Reflectance Value (LRV) of a color. In essence, it is the Y component of CIE XYZ under Illuminant C.
+Computes the Light Reflectance Value (LRV) of a color. In essence, it is the `Y` component of CIE XYZ under Illuminant `C`.
 
 #### named_color/2
 ```erlang
@@ -685,24 +685,25 @@ nayatani_model(XYZ, WP, Yo, Eo, Eor) -> Result
 nayatani_model(XYZ, WP, Yo, Eo, Eor, Opts) -> Result
 ```
 Types:
--   XYZ : {float(), float(), float()} %% Object XYZ
--   WP : {float(), float(), float()} | illuminant() %% White point or illuminant
--   Yo : float() %% Luminance factor, typical range [0.18, 1.0]
--   Eo : float() %% Illuminance in lux
--   Eor : float() %% Normalizing illuminance in lux
--   Opts : #{n := number()} %% Noise term (optional)
--   Result : #nayatani{} %% Nayatani appearance model record
+-   XYZ :: {float(), float(), float()} %% Object XYZ
+-   WP :: {float(), float(), float()} | illuminant() %% White point or illuminant
+-   Yo :: float() %% Luminance factor, typical range [0.18, 1.0]
+-   Eo :: float() %% Illuminance in lux
+-   Eor :: float() %% Normalizing illuminance in lux
+-   Opts :: #{n := number()} %% Noise term (optional)
+-   Result :: #nayatani{} %% Nayatani appearance model record
 
 Computes the Nayatani color appearance model for an object with given `XYZ` values, adapting white point, luminance factor, and illuminances. Optional `n` in `Opts` allows specifying a noise term.
+
 #### srgbto8bit/1
 ```erlang
 srgbto8bit(SRGB) -> {R8, G8, B8}
 ```
 Types:
--   SRGB : #srgb{} %% Input sRGB color
--   R8 : pos_integer() %% Red channel [0, 255]
--   G8 : pos_integer() %% Green channel [0, 255]
--   B8 : pos_integer() %% Blue channel [0, 255]
+-   SRGB :: #srgb{} %% Input sRGB color
+-   R8 :: pos_integer() %% Red channel [0, 255]
+-   G8 :: pos_integer() %% Green channel [0, 255]
+-   B8 :: pos_integer() %% Blue channel [0, 255]
 
 Converts an sRGB color with float channels in [0.0, 1.0] to 8-bit integer representation in [0, 255].
 Only D65 illuminant is supported.
@@ -713,9 +714,9 @@ srgbtohex(SRGB) -> Hex
 srgbtohex(SRGB, Opts) -> Hex
 ```
 Types:
--   SRGB : #srgb{} %% Input sRGB color
--   Opts : #{prefix := binary()} %% Optional hex prefix (default: <<"">>)
--   Hex : binary() %% Hexadecimal representation, e.g. <<"ff0000">>
+-   SRGB :: #srgb{} %% Input sRGB color
+-   Opts :: #{prefix := binary()} %% Optional hex prefix (default: <<"">>)
+-   Hex :: binary() %% Hexadecimal representation, e.g. <<"ff0000">>
 
 Converts an sRGB color (D65 only) to a hexadecimal string.
 The `prefix` option allows adding a string like <<"0x">> or <<"#">> before the hex digits.

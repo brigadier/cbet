@@ -1802,6 +1802,8 @@ named_color(Name, Format) ->
 lrv(Color) ->
 	#xyz{y = Y} = convert(Color, #xyz{illum = ?ILLUM_C}),
 	Y.
+
+
 %%=====================================================================
 %%                              CAM 16
 %%				similar to the one in the python lib colour
