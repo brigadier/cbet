@@ -1,19 +1,18 @@
 -module(cbet).
 
 -export([adapt/4, convert/2, convert/3,
-	srgbtohex/1, srgbtohex/2, srgbto8bit/1, hextosrgb/1,
-	hextosrgb/2, distance/3, interpolate/5, named_color/2,
+	distance/3, interpolate/5, named_color/2,
 	cam16_model/5, cam16_model/4, nayatani_model/5, nayatani_model/6,
 	chromaticity/1,
 	hunt_model/5,
-	hunt_model/6, lrv/1, intto8bit/1, inttosrgb/1]).
+	hunt_model/6, lrv/1, named_color/3]).
 
 -include("cbet_debug.hrl").
 -include("cbet.hrl").
 -include("cbet_matrix.hrl").
--include_lib("eunit/include/eunit.hrl").
+-include_lib("stdlib/include/assert.hrl").
 
--export_type([convert_opts/0, srgbtohex_opts/0, hextosrgb_opts/0]).
+-export_type([convert_opts/0]).
 
 illum(?ILLUM_A) -> ?ILLUM_A_M;
 illum(?ILLUM_D50) -> ?ILLUM_D50_M;
@@ -155,13 +154,74 @@ adapt(?VECTOR3(_X, _Y, _Z) = XYZ, SourceWhiteName, TargetWhiteName, Type) ->
 	cbet_math:mulv(M_Adapt, XYZ).
 
 
--type convert_opts() :: #{adaptation := chromatic_adaptation(), clamp := boolean()}.
+-type convert_opts() :: #{
+	adaptation := chromatic_adaptation(),
+	clamp := boolean(),
+	out_hex_prefix := binary(),
+	hex_prefixes := [binary()],
+	allow_short_hex := boolean()
+}.
 
--spec convert(From :: cbet_color(), To :: cbet_color()) -> cbet_color().
+-spec convert(From :: cbet_color() | binary | {integer(), integer(), integer()}, To :: cbet_color()) -> cbet_color().
 convert(From, To) ->
 	convert(From, To, #{}).
 
--spec convert(From :: cbet_color(), To :: cbet_color(), Opts :: convert_opts()) -> cbet_color().
+
+-spec convert(From :: cbet_color() | binary | {integer(), integer(), integer()}, To :: cbet_color(), Opts :: convert_opts()) -> cbet_color().
+
+convert({R, G, B} = From, To, Opts) ->
+
+	?assert(R >= 0 andalso G >= 0 andalso B >= 0 andalso R =< 255
+		andalso G =< 255 andalso B =< 255),
+
+	case To of
+		?RGB3X8 -> From;
+		?RGBINT -> rgb_to_int(From);
+		?RGBHEX -> rgb_to_hex(From, Opts);
+		_ ->
+			Srgb = #srgb{r = R / 255.0, g = G / 255.0, b = B / 255.0},
+			convert(Srgb, To)
+	end;
+
+convert(From, To, Opts) when is_binary(From) ->
+	case cbet_named_colors:named_color(From) of
+		not_found ->
+			RGB = hex_to_rgb(From, Opts),
+			convert(RGB, To, Opts);
+		RGB ->
+			convert(RGB, To, Opts)
+	end;
+
+convert(From, To, Opts) when is_integer(From) ->
+
+	?assert(From >=0 andalso From =< 16#FFFFFF),
+
+	case To of
+		?RGB3X8 -> int_to_rgb(From);
+		?RGBINT -> From;
+		?RGBHEX -> rgb_to_hex(int_to_rgb(From), Opts);
+		_ ->
+			{R, G, B} = int_to_rgb(From),
+			Srgb = #srgb{r = R / 255.0, g = G / 255.0, b = B / 255.0},
+			convert(Srgb, To)
+	end;
+
+
+convert(From, ?RGB3X8, Opts) ->
+	#srgb{r = R0, g = G0, b = B0} = convert(From, #srgb{}, Opts#{clamp => true}),
+	R = round(R0 * 255),
+	G = round(G0 * 255),
+	B = round(B0 * 255),
+	{R, G, B};
+
+convert(From, ?RGBINT, Opts) ->
+	RGB = convert(From, ?RGB3X8, Opts),
+	convert(RGB, ?RGBINT, Opts);
+
+convert(From, ?RGBHEX, Opts) ->
+	RGB = convert(From, ?RGB3X8, Opts),
+	convert(RGB, ?RGBHEX, Opts);
+
 convert(From, To, _) when element(1, From) == element(1, To) andalso ?ILLUMINANT(From) == ?ILLUMINANT(To) ->
 	From;
 
@@ -1690,8 +1750,8 @@ distance(Color1, Color2, ?DELTA_OKLAB) ->
 	Color2 :: cbet_color(),
 	Space :: #lab{},        %% промежуточное пространство на данный момент поддерживается только Lab
 	Steps :: pos_integer(), %% ≥2
-	ResultSpace :: cbet_color()   %% структура, в которой хотим получить результат
-) -> {ok, [cbet_color()]}.
+	ResultSpace :: cbet_color_rec()   %% структура, в которой хотим получить результат
+) -> {ok, [cbet_color_rec()]}.
 
 interpolate(Color1, Color2, #lab{} = Space,
 	Steps, ResultSpace) when is_integer(Steps), Steps >= 2 ->
@@ -1717,99 +1777,17 @@ interpolate(Color1, Color2, #lab{} = Space,
 
 
 
--spec srgbtohex(SRGB :: #srgb{}) -> binary().
-srgbtohex(SRGB) ->
-	srgbtohex(SRGB, #{}).
-
--type srgbtohex_opts() :: #{prefix := binary}.
-
--spec srgbtohex(SRGB :: #srgb{}, Opts :: srgbtohex_opts()) -> binary().
-%%только D65
-srgbtohex(#srgb{r = R, g = G, b = B, illum = ?ILLUM_D65}, Opts) ->
-	Prefix = maps:get(prefix, Opts, <<"">>),
-	Hex = binary:encode_hex(<<
-		(round(R * 255)):8,
-		(round(G * 255)):8,
-		(round(B * 255)):8
-	>>),
-	<<Prefix/binary, Hex/binary>>.
-
--spec srgbto8bit(SRGB :: #srgb{}) -> {pos_integer(), pos_integer(), pos_integer()}.
-srgbto8bit(#srgb{r = R, g = G, b = B, illum = ?ILLUM_D65}) ->
-	{round(R * 255), round(G * 255), round(B * 255)}.
 
 
--spec intto8bit(Val :: integer()) -> #srgb{}.
+-spec named_color(Name :: binary(), To :: cbet_color()) -> {ok, cbet_color()} | not_found.
+named_color(Name, To) ->
+	named_color(Name, To, #{}).
 
-intto8bit(Val) when Val >= 0, Val =< 16#FFFFFF ->
-	R = (Val bsr 16) band 16#FF,
-	G = (Val bsr 8) band 16#FF,
-	B = Val band 16#FF,
-	{R, G, B}.
-
-
--spec inttosrgb(Val :: integer()) -> #srgb{}.
-
-inttosrgb(Val) ->
-	{R, G, B} = intto8bit(Val),
-	#srgb{r = R / 255.0, g = G / 255.0, b = B / 255.0}.
-
-
--spec hextosrgb(Hex :: binary()) -> #srgb{}.
-hextosrgb(Hex) ->
-	hextosrgb(Hex, #{}).
-
--type hextosrgb_opts() :: #{
-prefixes := [binary()], %% список допустимых префиксов, по умолчанию <<"0x">>, <<"0X">>, <<"#">>, <<"16#">>
-allow_short := boolean() %% разрешать короткую запись типа "#f00" (по умолч. true)
-}.
-
--spec hextosrgb(Hex :: binary(), Opts :: hextosrgb_opts()) -> #srgb{}.
-hextosrgb(Hex, Opts) ->
-	ValidPrefixes = maps:get(prefixes, Opts,
-		[<<"#">>, <<"0x">>, <<"0X">>, <<"16#">>]),
-	AllowShort = maps:get(allow_short, Opts, true),
-
-	F = fun
-			F(X, []) -> X;
-			F(X, [Pref | Rest]) ->
-				case string:prefix(X, Pref) of
-					nomatch -> F(X, Rest);
-					Else -> Else
-				end
-		end,
-	Hex1 = F(Hex, ValidPrefixes),
-	case Hex1 of
-		<<RB:2/binary, GB:2/binary, BB:2/binary>> ->
-			#srgb{
-				r = erlang:binary_to_integer(RB, 16) / 255.0,
-				g = erlang:binary_to_integer(GB, 16) / 255.0,
-				b = erlang:binary_to_integer(BB, 16) / 255.0
-			};
-		<<RB:1/binary, GB:1/binary, BB:1/binary>> when AllowShort ->
-			RB1 = erlang:binary_to_integer(RB, 16),
-			GB1 = erlang:binary_to_integer(GB, 16),
-			BB1 = erlang:binary_to_integer(BB, 16),
-			#srgb{
-				r = ((RB1 bsl 4) + RB1) / 255.0,
-				g = ((GB1 bsl 4) + GB1) / 255.0,
-				b = ((BB1 bsl 4) + BB1) / 255.0
-			}
-	end.
-
-
--spec named_color(Name :: binary(),
-	Format :: hex | '8byte' | srgb) -> {ok, #srgb{}|{integer(), integer(), integer()|binary()}} | {error, not_found}.
-named_color(Name, Format) ->
-	case  cbet_named_colors:named_color(Name) of
-		{Hex, {R, G, B}} ->
-			case Format of
-				hex -> {ok, Hex};
-				'8byte' -> {ok, {R, G, B}};
-				srgb -> {ok, #srgb{r = R / 255.0, g = G / 255.0,
-					b = B / 255.0}}
-			end;
-		Else -> Else
+-spec named_color(Name :: binary(), To :: cbet_color(), #{}) -> {ok, cbet_color()} | not_found.
+named_color(Name, To, Opts) ->
+	case cbet_named_colors:named_color(Name) of
+		not_found -> not_found;
+		Else -> {ok, convert(Else, To, Opts)}
 	end.
 
 
@@ -2685,3 +2663,49 @@ hunt_chroma(S, Yb, Yw, Q, Qw) ->
 		* (cbet_math:sign_pow(Q / Qw, Yb / Yw))
 		* (1.64 - cbet_math:sign_pow(0.29, Yb / Yw)).
 
+
+int_to_rgb(From) ->
+	R = (From bsr 16) band 16#FF,
+	G = (From bsr 8) band 16#FF,
+	B = From band 16#FF,
+	{R, G, B}.
+
+rgb_to_int({R, G, B}) ->
+	(R bsl 16) + (G bsl 8) + B.
+
+rgb_to_hex({R, G, B}, Opts) ->
+	Prefix = maps:get(out_hex_prefix, Opts, <<"">>),
+	Hex = binary:encode_hex(<<R:8, G:8, B:8>>),
+	<<Prefix/binary, Hex/binary>>.
+
+
+hex_to_rgb(Hex, Opts) ->
+	ValidPrefixes = maps:get(hex_prefixes, Opts,
+		[<<"#">>, <<"0x">>, <<"0X">>, <<"16#">>]),
+	AllowShort = maps:get(allow_short_hex, Opts, true),
+	F = fun
+			F(X, []) -> X;
+			F(X, [Pref | Rest]) ->
+				case string:prefix(X, Pref) of
+					nomatch -> F(X, Rest);
+					Else -> Else
+				end
+		end,
+	Hex1 = F(Hex, ValidPrefixes),
+	case Hex1 of
+		<<RB:2/binary, GB:2/binary, BB:2/binary>> ->
+			{
+				erlang:binary_to_integer(RB, 16),
+				erlang:binary_to_integer(GB, 16),
+				erlang:binary_to_integer(BB, 16)
+			};
+		<<RB:1/binary, GB:1/binary, BB:1/binary>> when AllowShort ->
+			RB1 = erlang:binary_to_integer(RB, 16),
+			GB1 = erlang:binary_to_integer(GB, 16),
+			BB1 = erlang:binary_to_integer(BB, 16),
+			{
+				(RB1 bsl 4) + RB1,
+				(GB1 bsl 4) + GB1,
+				(BB1 bsl 4) + BB1
+			}
+	end.

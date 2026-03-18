@@ -1,6 +1,11 @@
 -export_type([illuminant/0, chromatic_adaptation/0, ictcp_transfer/0,
-    color_distance/0, din99_algorithm/0, cbet_color/0, cam16_surround/0, nayatani_color_composition/0, hunt_surround/0]).
+    color_distance/0, din99_algorithm/0, cbet_color_rec/0, cam16_surround/0,
+    nayatani_color_composition/0, hunt_surround/0, cbet_color_other/0, cbet_color/0]).
 
+
+-define(RGB3X8, 'rgb3x8').
+-define(RGBINT, 'rgbint').
+-define(RGBHEX, 'rgbhex').
 
 %% =====================================================
 %% Transfer functons for ICtCp
@@ -352,7 +357,9 @@
 }).
 
 
--type cbet_color() ::
+-type cbet_color_other() :: ?RGB3X8 | ?RGBINT | ?RGBHEX.
+
+-type cbet_color_rec() ::
       #srgb{}
     | #adobe_rgb{}
     | #display_p3{}
@@ -378,6 +385,8 @@
     | #hwb{}
     | #oklab{}
     | #oklch{}.
+
+-type cbet_color() :: cbet_color_rec() | cbet_color_other().
 
 -define(ILLUMINANT(Rec), element(2, Rec)).
 

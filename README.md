@@ -13,6 +13,7 @@ The library provides a unified pipeline for color conversion and processing, sup
 - **CIE Color Spaces** - XYZ, xyY, Lab, Luv, LCh, LChuv
 - **Perceptual and Advanced Color Models** - LogLuv, DIN99, IPT, ICtCp, Oklab, Oklch
 - **Cylindrical & User-Oriented Color Models** - HSV, HSL, HSI, HWB, CMY
+- **Other common RGB formats** - such as hex `<<"FF0011">>`, int `16711697`, 3 byte rgb `{255, 0, 17}` and named colors (`<<"red">>`)
 
 This library's primary function is `convert`, which transforms colors between different formats and illuminants. The library also provides several simpler functions for basic color manipulation, along with a few more complex ones for calculating correlates of color appearance models such as CAM16, Hunt, Nayatani et al. (95).
 
@@ -82,14 +83,26 @@ Where `'PQ'`: Perceptual Quantizer (ST 2084); `'HLG'`: Hybrid Log-Gamma
 ```erlang
 -type hunt_surround() :: small_uniform|normal|tv_dim|light_boxes|projected_dark.
 ```
+
+#### Common RGB formats
+```erlang
+-type cbet_color_other() :: ?RGB3X8 | ?RGBINT | ?RGBHEX.
+```
+
 ##### All supported color formats:
 ```erlang
--type cbet_color() :: #srgb{}|#adobe_rgb{}|#display_p3{}|#rec2020{}|#rec709{}|
+-type cbet_color_rec() :: #srgb{}|#adobe_rgb{}|#display_p3{}|#rec2020{}|#rec709{}|
                       #prophoto_rgb{}|#wide_gamut_rgb{}|#linear_rgb{}|#xyz{}|#xyy{}|
                       #lab{}|#luv{}|#lchuv{}|#logluv{}|#din99_lab{}|#ipt{}|#ictcp{}|
                       #hsv{}|#hsl{}|#hsi{}|#lch{}|#cmy{}|#hwb{}|#oklab{}|#oklch{}.
 ```
 Detailed descriptions of the individual color format structures are provided in the sections below.
+
+#### Common RGB formats + All supported color formats
+```erlang
+-type cbet_color() :: ?cbet_color_rec() | cbet_color_other()
+```
+
 ## Color Format Structures
 This section describes the supported color format records, their fields, and valid ranges.
 
@@ -374,6 +387,15 @@ These include transfer functions, illuminants, chromatic adaptation methods, DIN
 
 Below is a summary of the main macro groups; their detailed usage is described in the type definitions above.
 
+
+#### Common RGB formats
+```erlang
+
+-define(RGB3X8, 'rgb3x8').
+-define(RGBINT, 'rgbint').
+-define(RGBHEX, 'rgbhex').
+```
+
 #### Transfer functions
 ```erlang
 -define(TRANSFER_PQ, 'PQ').
@@ -534,22 +556,29 @@ convert(From, To, Opts) -> Result
 ```
 
 Types:
--   From :: cbet_color() - source color record
--   To :: cbet_color() - target color record type
+-   From :: cbet_color() - source color
+-   To :: cbet_color() - target color record type or RGB format
 -   Opts :: convert_opts() = #{
     adaptation := chromatic_adaptation(), - Chromatic adaptation method
-    clamp := boolean() - Whether to clamp values
+    clamp := boolean() - Whether to clamp values,
+    out_hex_prefix := binary() - Optional hex prefix (default: <<"">>). For converting color into hex.
+	hex_prefixes := [binary()] - [binary()], - list of allowed prefixes for converting from hex (default: <<"0x">>, <<"0X">>, <<"#">>, <<"16#">>)
+	allow_short_hex := boolean() - whether short form like "#f00" is allowed (default: true)
     }
--   Result :: cbet_color() - converted color record
+-   Result :: cbet_color() - converted color record or RGB representation
 
-Converts a color `From` to the format specified by `To`. Optional parameters in `Opts` allow specifying chromatic adaptation method and whether to clamp the result. By default `clamp == true`, `adaptation == 'Bradford'`
+Converts a color `From` to the format specified by `To`. Optional parameters in `Opts` allow specifying chromatic adaptation method, whether to clamp the result and other otions. By default `clamp == true`, `adaptation == 'Bradford'`
 
 **Example**:
 ```erlang
 #lab{} = Lab = cbet:convert(#srgb{r=1.0, g=0.0, b=0.0}, #lab{illum=?D65}, #{adaptation => ?BRADFORD, clamp => true}). %%converts from the sRGB D65(default) to the CIELab D65 structure
+<<"pref00FF00">> = cbet:convert({0, 255, 0}, ?RGBHEX, #{out_hex_prefix => <<"pref">}).
+#lab{} = cbet:convert(<<"prefA2F">>, #lab{}, #{hex_prefixes => [<<"0x">>, <<"0X">>, <<"#">>, <<"16#">>, <<"pref">>]}).
+
 ```
 **Warning:**
-- ⚠️This function does **not** check whether record field values are within valid ranges. If any field contains an out-of-range value, the function results in **undefined behavior**.
+- ⚠️ This function does **not** check whether record field values are within valid ranges, except for RGB formats. If any field contains an out-of-range value, the function results in **undefined behavior**.
+- ⚠️ For RGB formats it does check the ranges and would throw an exception if something is not ok.
 - ⚠️ If `clamp = false`, the function may return structures with invalid values, such as negative components in RGB records, for example. The presence of such components indicates that the value is **out of gamut** for the target color space.
 
 #### distance/3
@@ -575,28 +604,6 @@ Distance = cbet:distance(#lab{l=50, a=20, b=30}, #srgb{r=0.1, g=0.2, b=0.3}, ?DE
 - ⚠️`ΔE_ITP` is designed for HDR colors using PQ/HLG transfer functions. This library operates in SDR, so linear RGB values here may not match the same colors in HDR. Use ΔE_ITP in SDR with caution — the result may differ from true HDR perceptual differences.
 - ⚠️This function does **not** check whether record field values are within valid ranges. If any field contains an out-of-range value, the function results in **undefined behavior**.
 
-#### hextosrgb/1,2
-```erlang
-hextosrgb(Hex) -> Result
-hextosrgb(Hex, Opts) -> Result
-```
-Types:
--   Hex :: binary() - color in hexadecimal notation
--   Opts :: hextosrgb_opts() = #{
-    prefixes := [binary()], - list of allowed prefixes (default: <<"0x">>, <<"0X">>, <<"#">>, <<"16#">>)
-    allow_short := boolean() - whether short form like "#f00" is allowed (default: true)
-    }
--   Result :: #srgb{} = resulting sRGB color record
-
-Parses a hexadecimal color string into an `#srgb{}` record. Optional parameters in `Opts` allow customizing allowed prefixes and enabling short form notation.
-
-Example:
-```erlang
-%% all valid
-C1 = cbet:hextosrgb("0xff0000").
-C2 = cbet:hextosrgb("f00").
-C3 = cbet:hextosrgb("prefix00ff00", #{allow_short => false, prefixes => [<<"prefix">>, <<"#">>]}).
-```
 #### hunt_model/5,6
 ```erlang
 hunt_model(XYZ, WP, BgP, L_A, Surround) -> Result
@@ -630,8 +637,8 @@ Types:
 -   Color2 :: cbet_color() = ending color
 -   Space :: #lab{} = intermediate color space (currently only Lab is supported)
 -   Steps :: pos_integer() = number of steps in interpolation (≥ 2)
--   ResultSpace :: cbet_color() = color structure in which results are returned
--   ResultList :: [cbet_color()] = list of interpolated colors, including endpoints
+-   ResultSpace :: cbet_color_rec() = color structure in which results are returned
+-   ResultList :: [cbet_color_rec()] = list of interpolated colors, including endpoints
 
 
 Computes a linear interpolation between `Color1` (any space) and `Color2` (any space as well) in the specified intermediate `Space`.
@@ -644,30 +651,6 @@ Interpolation in a perceptually uniform space like `Lab` ensures visually even s
 - ⚠️This function does **not** check whether record field values are within valid ranges. If any field contains an out-of-range value, the function results in **undefined behavior**.
 
 
-
-#### intto8bit/1
-```erlang
-intto8bit(Val) -> {R8, G8, B8}
-```
-Types:
--   Val :: integer() - color, [0, 16#FFFFFF]
--   R8 :: pos_integer() %% Red channel [0, 255]
--   G8 :: pos_integer() %% Green channel [0, 255]
--   B8 :: pos_integer() %% Blue channel [0, 255]
-
-Parses an integer RGB value into a 8-bit integer representation in [0, 255].
-
-
-#### inttosrgb/1
-```erlang
-inttosrgb(Val) -> Result
-```
-Types:
--   Val :: integer() - color,  [0, 16#FFFFFF]
--   Result :: #srgb{} = resulting sRGB color record
-
-Parses an integer RGB value into an `#srgb{}` record.
-
 #### lrv/1
 ```erlang
 lrv(Color) -> LRV
@@ -678,32 +661,22 @@ Types:
 
 Computes the Light Reflectance Value (LRV) of a color. In essence, it is the `Y` component of CIE XYZ under Illuminant `C`.
 
-#### named_color/2
+#### named_color/2,3
 ```erlang
-named_color(Name, Format) -> {ok, Color} | {error, not_found}
+named_color(Name, To, Opts) -> {ok, Color} | not_found
 ```
 Types:
 -   Name : binary() = name of the color, e.g., <<"red">>
--   Format : hex | '8byte' | srgb
--   Color :
-    -   `hex` -> binary(), hexadecimal representation
-    -   `'8byte'` -> {integer(), integer(), integer()}, 8-bit RGB tuple
-    -   `srgb` -> #srgb{} structure with components normalized to [0.0, 1.0]
+-   Format : cbet_color()
+-   Color : cbet_color()
 
-Looks up a color by `Name` and returns it in the specified `Format`.
-If the color name is not found, returns `{error, not_found}`.
+Essentially the same as `convert/2,3` but returns `not_found` when the color is not found instead of throwing an exception, and `{ok, Color}` when the color is found.
 
  **Example**:
 ```erlang
-% Standard CSS/X11 color names
-1> cbet:named_color(<<"red">>, hex).
-{ok, <<"#ff0000">>}
 
-2> cbet:named_color(<<"forestgreen">>, '8byte').
+cbet:named_color(<<"forestgreen">>, ?RGB3X8).
 {ok, {34, 139, 34}}
-
-3> cbet:named_color(<<"cadetblue">>, srgb).
-{ok, #srgb{r=0.37255, g=0.50980, b=0.62745}}
 
 ```
 #### nayatani_model/5,6
@@ -721,32 +694,6 @@ Types:
 -   Result :: #nayatani{} %% Nayatani appearance model record
 
 Computes the Nayatani color appearance model for an object with given `XYZ` values, adapting white point, luminance factor, and illuminances. Optional `n` in `Opts` allows specifying a noise term.
-
-#### srgbto8bit/1
-```erlang
-srgbto8bit(SRGB) -> {R8, G8, B8}
-```
-Types:
--   SRGB :: #srgb{} %% Input sRGB color
--   R8 :: pos_integer() %% Red channel [0, 255]
--   G8 :: pos_integer() %% Green channel [0, 255]
--   B8 :: pos_integer() %% Blue channel [0, 255]
-
-Converts an sRGB color with float channels in [0.0, 1.0] to 8-bit integer representation in [0, 255].
-Only D65 illuminant is supported.
-
-#### srgbtohex/1,2
-```erlang
-srgbtohex(SRGB) -> Hex
-srgbtohex(SRGB, Opts) -> Hex
-```
-Types:
--   SRGB :: #srgb{} %% Input sRGB color
--   Opts :: #{prefix := binary()} %% Optional hex prefix (default: <<"">>)
--   Hex :: binary() %% Hexadecimal representation, e.g. <<"ff0000">>
-
-Converts an sRGB color (D65 only) to a hexadecimal string.
-The `prefix` option allows adding a string like <<"0x">> or <<"#">> before the hex digits.
 
 ## Files and Modules
 
