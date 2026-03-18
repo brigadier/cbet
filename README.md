@@ -556,7 +556,7 @@ convert(From, To, Opts) -> Result
 ```
 
 Types:
--   From :: cbet_color() - source color
+-   From :: cbet_color_rec() | integer() | binary() | {integer(), integer(), integer()} - source color
 -   To :: cbet_color() - target color record type or RGB format
 -   Opts :: convert_opts() = #{
     adaptation := chromatic_adaptation(), - Chromatic adaptation method
@@ -565,7 +565,7 @@ Types:
 	hex_prefixes := [binary()] - [binary()], - list of allowed prefixes for converting from hex (default: <<"0x">>, <<"0X">>, <<"#">>, <<"16#">>)
 	allow_short_hex := boolean() - whether short form like "#f00" is allowed (default: true)
     }
--   Result :: cbet_color() - converted color record or RGB representation
+-   Result :: cbet_color_rec() | integer() | binary() | {integer(), integer(), integer()} - converted color record or RGB representation
 
 Converts a color `From` to the format specified by `To`. Optional parameters in `Opts` allow specifying chromatic adaptation method, whether to clamp the result and other otions. By default `clamp == true`, `adaptation == 'Bradford'`
 
@@ -586,8 +586,8 @@ Converts a color `From` to the format specified by `To`. Optional parameters in 
 distance(Color1, Color2, Algo) -> Result
 ```
 Types:
--   Color1 :: cbet_color() = first color record
--   Color2 :: cbet_color() = second color record
+-   Color1 :: cbet_color_rec() | integer() | binary() | {integer(), integer(), integer()} = first color record
+-   Color2 :: cbet_color_rec() | integer() | binary() | {integer(), integer(), integer()} = second color record
 -   Algo :: color_distance() = distance metric to use (`?DELTA_XYZ`, `?DELTA_CIE1976`, etc.)
 -   Result :: float() = computed color distance
 
@@ -633,12 +633,12 @@ Computes the Hunt color appearance model for an object with the given XYZ, white
 interpolate(Color1, Color2, Space, Steps, ResultSpace) -> {ok, ResultList}
 ```
 Types:
--   Color1 :: cbet_color() = starting color
--   Color2 :: cbet_color() = ending color
+-   Color1 :: cbet_color_rec() | integer() | binary() | {integer(), integer(), integer()} = starting color
+-   Color2 :: cbet_color_rec() | integer() | binary() | {integer(), integer(), integer()} = ending color
 -   Space :: #lab{} = intermediate color space (currently only Lab is supported)
 -   Steps :: pos_integer() = number of steps in interpolation (≥ 2)
--   ResultSpace :: cbet_color_rec() = color structure in which results are returned
--   ResultList :: [cbet_color_rec()] = list of interpolated colors, including endpoints
+-   ResultSpace :: cbet_color() = color structure in which results are returned
+-   ResultList :: [cbet_color_rec() | integer() | binary() | {integer(), integer(), integer()}] = list of interpolated colors, including endpoints
 
 
 Computes a linear interpolation between `Color1` (any space) and `Color2` (any space as well) in the specified intermediate `Space`.
@@ -667,8 +667,8 @@ named_color(Name, To, Opts) -> {ok, Color} | not_found
 ```
 Types:
 -   Name : binary() = name of the color, e.g., <<"red">>
--   Format : cbet_color()
--   Color : cbet_color()
+-   To : cbet_color()
+-   Color : cbet_color_rec() | integer() | binary() | {integer(), integer(), integer()}
 
 Essentially the same as `convert/2,3` but returns `not_found` when the color is not found instead of throwing an exception, and `{ok, Color}` when the color is found.
 

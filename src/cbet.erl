@@ -162,12 +162,12 @@ adapt(?VECTOR3(_X, _Y, _Z) = XYZ, SourceWhiteName, TargetWhiteName, Type) ->
 	allow_short_hex := boolean()
 }.
 
--spec convert(From :: cbet_color() | binary | {integer(), integer(), integer()}, To :: cbet_color()) -> cbet_color().
+-spec convert(From :: cbet_color_rec() | integer() | binary() | {integer(), integer(), integer()}, To :: cbet_color()) -> cbet_color_rec() | integer() | binary() | {integer(), integer(), integer()}.
 convert(From, To) ->
 	convert(From, To, #{}).
 
 
--spec convert(From :: cbet_color() | binary | {integer(), integer(), integer()}, To :: cbet_color(), Opts :: convert_opts()) -> cbet_color().
+-spec convert(From :: cbet_color_rec() | integer() | binary | {integer(), integer(), integer()}, To :: cbet_color(), Opts :: convert_opts()) -> cbet_color_rec() | integer() | binary() | {integer(), integer(), integer()}.
 
 convert({R, G, B} = From, To, Opts) ->
 
@@ -1606,9 +1606,11 @@ apply_ictcp_transfer(L, M, S, ?TRANSFER_HLG) ->
 		hlg_encode(S)).
 
 
--spec distance(Color1 :: cbet_color(),
-	Color2 :: cbet_color(),
-	Algo :: color_distance()) -> float().
+-spec distance(
+	Color1 :: cbet_color_rec() | integer() | binary() | {integer(), integer(), integer()},
+	Color2 :: cbet_color_rec() | integer() | binary() | {integer(), integer(), integer()},
+	Algo :: color_distance()
+) -> float().
 %%Иллюминант D65
 distance(Color1, Color2, ?DELTA_XYZ) ->
 	#xyz{x = X1, y = Y1, z = Z1} = convert(Color1, #xyz{illum = ?ILLUM_D65}),
@@ -1746,12 +1748,12 @@ distance(Color1, Color2, ?DELTA_OKLAB) ->
 
 
 -spec interpolate(
-	Color1 :: cbet_color(),
-	Color2 :: cbet_color(),
+	Color1 :: cbet_color_rec() | integer() | binary() | {integer(), integer(), integer()},
+	Color2 :: cbet_color_rec() | integer() | binary() | {integer(), integer(), integer()},
 	Space :: #lab{},        %% промежуточное пространство на данный момент поддерживается только Lab
 	Steps :: pos_integer(), %% ≥2
-	ResultSpace :: cbet_color_rec()   %% структура, в которой хотим получить результат
-) -> {ok, [cbet_color_rec()]}.
+	ResultSpace :: cbet_color()   %% структура, в которой хотим получить результат
+) -> {ok, [cbet_color_rec() | integer() | binary() | {integer(), integer(), integer()}]}.
 
 interpolate(Color1, Color2, #lab{} = Space,
 	Steps, ResultSpace) when is_integer(Steps), Steps >= 2 ->
@@ -1779,11 +1781,11 @@ interpolate(Color1, Color2, #lab{} = Space,
 
 
 
--spec named_color(Name :: binary(), To :: cbet_color()) -> {ok, cbet_color()} | not_found.
+-spec named_color(Name :: binary(), To :: cbet_color()) -> {ok, cbet_color_rec() | integer() | binary() | {integer(), integer(), integer()}} | not_found.
 named_color(Name, To) ->
 	named_color(Name, To, #{}).
 
--spec named_color(Name :: binary(), To :: cbet_color(), #{}) -> {ok, cbet_color()} | not_found.
+-spec named_color(Name :: binary(), To :: cbet_color(), #{}) -> {ok, cbet_color_rec() | integer() | binary() | {integer(), integer(), integer()}} | not_found.
 named_color(Name, To, Opts) ->
 	case cbet_named_colors:named_color(Name) of
 		not_found -> not_found;
