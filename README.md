@@ -574,6 +574,7 @@ Distance = cbet:distance(#lab{l=50, a=20, b=30}, #srgb{r=0.1, g=0.2, b=0.3}, ?DE
 - `ΔE00` computation handles hue angle wrapping, chroma correction, and weighting factors as per CIEDE2000 standard.
 - ⚠️`ΔE_ITP` is designed for HDR colors using PQ/HLG transfer functions. This library operates in SDR, so linear RGB values here may not match the same colors in HDR. Use ΔE_ITP in SDR with caution — the result may differ from true HDR perceptual differences.
 - ⚠️This function does **not** check whether record field values are within valid ranges. If any field contains an out-of-range value, the function results in **undefined behavior**.
+
 #### hextosrgb/1,2
 ```erlang
 hextosrgb(Hex) -> Result
@@ -641,6 +642,32 @@ Interpolation in a perceptually uniform space like `Lab` ensures visually even s
 
 **Warning:**
 - ⚠️This function does **not** check whether record field values are within valid ranges. If any field contains an out-of-range value, the function results in **undefined behavior**.
+
+
+
+#### intto8bit/1
+```erlang
+intto8bit(Val) -> {R8, G8, B8}
+```
+Types:
+-   Val :: integer() - color, [0, 16#FFFFFF]
+-   R8 :: pos_integer() %% Red channel [0, 255]
+-   G8 :: pos_integer() %% Green channel [0, 255]
+-   B8 :: pos_integer() %% Blue channel [0, 255]
+
+Parses an integer RGB value into a 8-bit integer representation in [0, 255].
+
+
+#### inttosrgb/1
+```erlang
+inttosrgb(Val) -> Result
+```
+Types:
+-   Val :: integer() - color,  [0, 16#FFFFFF]
+-   Result :: #srgb{} = resulting sRGB color record
+
+Parses an integer RGB value into an `#srgb{}` record.
+
 #### lrv/1
 ```erlang
 lrv(Color) -> LRV

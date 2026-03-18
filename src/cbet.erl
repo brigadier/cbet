@@ -6,7 +6,7 @@
 	cam16_model/5, cam16_model/4, nayatani_model/5, nayatani_model/6,
 	chromaticity/1,
 	hunt_model/5,
-	hunt_model/6, lrv/1]).
+	hunt_model/6, lrv/1, intto8bit/1, inttosrgb/1]).
 
 -include("cbet_debug.hrl").
 -include("cbet.hrl").
@@ -1737,6 +1737,22 @@ srgbtohex(#srgb{r = R, g = G, b = B, illum = ?ILLUM_D65}, Opts) ->
 -spec srgbto8bit(SRGB :: #srgb{}) -> {pos_integer(), pos_integer(), pos_integer()}.
 srgbto8bit(#srgb{r = R, g = G, b = B, illum = ?ILLUM_D65}) ->
 	{round(R * 255), round(G * 255), round(B * 255)}.
+
+
+-spec intto8bit(Val :: integer()) -> #srgb{}.
+
+intto8bit(Val) when Val >= 0, Val =< 16#FFFFFF ->
+	R = (Val bsr 16) band 16#FF,
+	G = (Val bsr 8) band 16#FF,
+	B = Val band 16#FF,
+	{R, G, B}.
+
+
+-spec inttosrgb(Val :: integer()) -> #srgb{}.
+
+inttosrgb(Val) ->
+	{R, G, B} = intto8bit(Val),
+	#srgb{r = R / 255.0, g = G / 255.0, b = B / 255.0}.
 
 
 -spec hextosrgb(Hex :: binary()) -> #srgb{}.
