@@ -1739,8 +1739,8 @@ distance(Color1, Color2, ?DELTA_ITURBT21240) ->
 
 %%Иллюминант D65
 distance(Color1, Color2, ?DELTA_OKLAB) ->
-	#lab{l = L1, a = A1, b = B1} = convert(Color1, #oklab{illum = ?ILLUM_D65}),
-	#lab{l = L2, a = A2, b = B2} = convert(Color2, #oklab{illum = ?ILLUM_D65}),
+	#oklab{l = L1, a = A1, b = B1} = convert(Color1, #oklab{illum = ?ILLUM_D65}),
+	#oklab{l = L2, a = A2, b = B2} = convert(Color2, #oklab{illum = ?ILLUM_D65}),
 	DL = L2 - L1, DA = A2 - A1, DB = B2 - B1,
 	math:sqrt(
 		DL * DL + DA * DA + DB * DB
