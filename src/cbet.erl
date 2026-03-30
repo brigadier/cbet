@@ -126,7 +126,9 @@ adapt(?VECTOR3(_X, _Y, _Z) = XYZ, SourceWhiteName, TargetWhiteName, Type) ->
 			?XYZ_SCALING -> {?XYZ_SCALING_M, ?XYZ_SCALING_MI};
 			?HUNT -> {?HUNT_M, ?HUNT_MI};
 			?ZCAM -> {?ZCAM_M, ?ZCAM_MI};
-			?CAT16 -> {?CAT16_M, ?CAT16_MI}
+			?CAT16 -> {?CAT16_M, ?CAT16_MI};
+			_ when is_tuple(Type) ->
+				{Type, cbet_math:inverse(Type)}
 		end,
 
 	%% Получаем белые точки по имени
@@ -1744,7 +1746,7 @@ distance(Color1, Color2, ?DELTA_OKLAB) ->
 	DL = L2 - L1, DA = A2 - A1, DB = B2 - B1,
 	math:sqrt(
 		DL * DL + DA * DA + DB * DB
-	).
+	)*100.
 
 
 -spec interpolate(
